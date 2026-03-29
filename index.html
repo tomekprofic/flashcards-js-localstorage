@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centrum Fiszek</title>
+    
+    <style>
+        /* --- Globalne Ustawienia --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .kontener {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            width: 95%;
+            max-width: 1400px; 
+            box-sizing: border-box;
+            margin: 0 auto;
+        }
+        h2, h3 { color: #333; margin-top: 0; }
+        hr { border: none; border-top: 1px solid #eee; margin: 24px 0; }
+
+        /* --- Zarządzanie Ekranami --- */
+        .ekran { display: none; width: 100%; }
+        .ekran.aktywny { display: block; }
+
+        /* --- Przyciski --- */
+        .przycisk-glowny, .przycisk-maly {
+            font-size: 1rem;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .przycisk-glowny {
+            background-color: #007bff;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .przycisk-glowny:hover { background-color: #0056b3; }
+        .przycisk-glowny:active { transform: scale(0.99); }
+        .przycisk-glowny.zielony { background-color: #28a745; }
+        .przycisk-glowny.zielony:hover { background-color: #218838; }
+        .przycisk-glowny.czerwony { background-color: #dc3545; }
+        .przycisk-glowny.czerwony:hover { background-color: #c82333; }
+        .przycisk-glowny.zolty { background-color: #ffc107; color: #343a40; border: 1px solid rgba(0,0,0,0.1); }
+        .przycisk-glowny.zolty:hover { background-color: #e0a800; }
+        .przycisk-maly {
+            background-color: #f0f0f0;
+            color: #333;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        .przycisk-maly:hover { background-color: #e0e0e0; }
+        .przycisk-maly.zielony { background-color: #28a745; color: white; }
+        .przycisk-maly.zielony:hover { background-color: #218838; }
+        .przycisk-maly.niebieski { background-color: #17a2b8; color: white; }
+        .przycisk-maly.niebieski:hover { background-color: #138496; }
+
+        /* --- Formularze (Edytor i inne) --- */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-weight: 500; margin-bottom: 6px; }
+        input[type="text"], input[type="search"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        textarea { font-family: inherit; resize: vertical; }
+        .pasek-wyszukiwania {
+            padding: 12px;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+        }
+        .pasek-wyszukiwania:focus { border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,.25); outline: none; }
+        .form-group-checkbox { display: flex; align-items: center; gap: 5px; margin: 0; }
+        .form-group-checkbox input { width: auto; transform: scale(1.2); }
+        .form-group-checkbox label { margin: 0; font-weight: 500; font-size: 1.3rem; cursor: pointer; line-height: 1; }
+
+        /* --- Układ kolumnowy edytora --- */
+        .edytor-kontener-podwojny { display: flex; flex-wrap: wrap; gap: 24px; }
+        .edytor-kolumna { flex: 1; min-width: 300px; }
+        #edytor-kolumna-lista h3 { margin-bottom: 12px; }
+        #lista-fiszek-w-edytorze { max-height: 600px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 8px; }
+
+        /* --- Nagłówki formularzy --- */
+        .form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
+        .form-header h3 { margin: 0; white-space: nowrap; }
+        .form-header-przyciski { display: flex; gap: 10px; flex-shrink: 0; }
+        .form-header-przyciski .przycisk-maly { margin-top: 0; padding: 10px 15px; font-weight: 600; font-size: 0.9rem; width: auto; }
+        .pytanie-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .pytanie-header label { margin: 0; }
+
+        /* --- Edytor - Lista opcji i fiszek --- */
+        .opcja-w-edytorze { 
+            display: flex; 
+            flex-wrap: wrap; /* --- NOWE --- */
+            align-items: center; 
+            gap: 10px; 
+            padding: 8px; 
+            border: 1px solid #eee; 
+            border-radius: 6px; 
+            margin-bottom: 8px; 
+        }
+        /* --- NOWE --- Kontener na checkbox i input opcji */
+        .opcja-w-edytorze-glowna {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+            min-width: 250px; /* Minimalna szerokość dla tekstu opcji */
+        }
+        .opcja-w-edytorze-glowna input[type="text"] {
+            flex-grow: 1;
+        }
+        /* --- NOWE --- Styl dla pola Uwagi */
+        .opcja-w-edytorze .input-uwaga {
+            flex-basis: 100%; /* Zajmuje całą szerokość poniżej */
+            margin-top: 5px;
+            font-size: 0.9rem;
+            padding: 6px;
+            background-color: #f8f9fa;
+        }
+        .opcja-w-edytorze .btn-usun-opcje {
+            margin-left: auto; /* Przycisk X zawsze po prawej */
+        }
+        /* --- KONIEC NOWYCH --- */
+
+        .fiszka-w-edytorze { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 8px; border-left-width: 5px; }
+        .fiszka-w-edytorze[data-status="nowe"] { border-left-color: #007bff; }
+        .fiszka-w-edytorze[data-status="powtorka"] { border-left-color: #dc3545; }
+        .fiszka-w-edytorze[data-status="umiem"] { border-left-color: #28a745; }
+        .fiszka-w-edytorze span { flex-grow: 1; font-style: italic; color: #555; word-break: break-word; display: flex; align-items: center; gap: 8px; }
+        .fiszka-w-edytorze .gwiazdka-ikona { font-size: 1.2em; color: #ffc107; }
+        .fiszka-w-edytorze .fiszka-przyciski { display: flex; gap: 5px; flex-shrink: 0; }
+
+        /* --- Ekran Listy Zestawów --- */
+        #lista-zestawow .zestaw-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 16px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            margin-bottom: 0; 
+        }
+        #lista-zestawow .zestaw-item h3 { margin: 0; font-size: 1.2rem; }
+        #lista-zestawow .zestaw-przyciski { display: flex; gap: 10px; flex-wrap: wrap; }
+        .nawigacja-zakladek { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+        .zakladka { padding: 10px 20px; font-size: 1.1rem; font-weight: 600; border: none; background-color: transparent; cursor: pointer; color: #6c757d; margin-bottom: -2px; border-bottom: 2px solid transparent; }
+        .zakladka.aktywna { color: #007bff; border-bottom-color: #007bff; }
+
+        /* Style dla folderów */
+        .folder-grupa {
+            margin-bottom: 24px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden; 
+        }
+        .folder-naglowek {
+            padding: 12px 16px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .folder-naglowek h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: #333;
+        }
+        .folder-zawartosc {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px; 
+        }
+        .folder-grupa[data-folder="null"] .folder-naglowek {
+            background-color: transparent;
+            border-bottom-color: #eee;
+        }
+        .folder-grupa[data-folder="null"] .folder-naglowek h3 {
+            font-style: italic;
+            color: #666;
+            font-size: 1.2rem;
+        }
+
+        /* --- Ekran Quizu --- */
+        #postep-quizu { 
+            font-size: 0.9rem; 
+            color: #666; 
+            text-align: right; 
+            margin-bottom: 10px; 
+        }
+        #licznik-pominietych {
+            font-weight: 600;
+            color: #ffc107;
+            margin-left: 10px;
+        }
+        #karta-quizu { background-color: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 24px; min-height: 200px; margin-bottom: 20px; }
+        #pytanie-quizu { font-size: 1.5rem; font-weight: 600; margin-bottom: 16px; }
+        #odpowiedz-fiszka-quiz { font-size: 1.2rem; color: #0056b3; font-weight: 500; }
+        #opcje-wybor-quiz .opcja-quizu { display: block; margin-bottom: 10px; font-size: 1.1rem; }
+        #opcje-wybor-quiz label { padding: 10px; display: block; border-radius: 6px; border: 1px solid #ccc; cursor: pointer; transition: background-color 0.2s; }
+        #opcje-wybor-quiz label:hover { background-color: #f0f0f0; }
+        #opcje-wybor-quiz input { margin-right: 10px; }
+        #opcje-wybor-quiz label.poprawna { background-color: #e6f7ea; border-color: #28a745; }
+        #opcje-wybor-quiz label.bledna { background-color: #fbe9e7; border-color: #dc3545; }
+        
+        /* --- NOWE --- Styl dla uwagi w quizie */
+        .uwaga-quizu {
+            display: block;
+            font-size: 0.9rem;
+            font-style: italic;
+            color: #555;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #ccc;
+        }
+        /* --- KONIEC --- */
+
+        #nawigacja-quizu {
+            display: flex;
+            align-items: center;
+            gap: 10px; 
+        }
+        #btn-akcja-quizu { flex-grow: 1; margin-top: 0; }
+        #kontener-oceny { margin-top: 0; border-top: none; padding-top: 0; flex-grow: 1; display: none; justify-content: space-between; gap: 10px; }
+        #kontener-oceny p { display: none; }
+        #kontener-oceny button { width: auto; flex-grow: 1; margin-top: 0; } 
+
+        .przycisk-pomin, .przycisk-tasuj {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 15px;
+            margin-left: auto; 
+            flex-shrink: 0;
+        }
+        .przycisk-pomin:hover, .przycisk-tasuj:hover { background-color: #5a6268; }
+        .przycisk-tasuj {
+            margin-left: 0; 
+        }
+        .przycisk-pomin {
+        }
+        #btn-akcja-quizu {
+            margin-left: 10px; 
+        }
+
+        #ekran-konca-quizu { text-align: center; padding: 20px; }
+        .kontener-przyciskow-konca { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .przycisk-gwiazdka { position: absolute; top: 20px; right: 70px; font-size: 1.8rem; background: none; border: none; cursor: pointer; padding: 5px; line-height: 1; opacity: 0.3; transition: opacity 0.2s, transform 0.2s; }
+        .przycisk-gwiazdka.aktywna { opacity: 1; color: #ffc107; }
+        .przycisk-gwiazdka:hover { transform: scale(1.2); }
+
+        /* --- Style dla Eksportu/Importu --- */
+        .kontener-zarzadzania { 
+            margin-top: 20px; 
+            padding-top: 20px; 
+            border-top: 1px solid #eee; 
+            display: flex; 
+            gap: 10px; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+        }
+        #input-importuj + label { cursor: pointer; }
+
+        /* Style dla przeniesionych przycisków akcji */
+        .kontener-akcji-naglowka {
+            display: flex;
+            flex-wrap: wrap; 
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-top: 10px; 
+            margin-bottom: 20px;
+        }
+        .kontener-akcji-naglowka #btn-pokaz-edytor-nowy {
+            width: auto;
+            flex-grow: 1; 
+            min-width: 200px; 
+            max-width: 300px; 
+            margin-top: 0; 
+        }
+        .kontener-akcji-naglowka .kontener-zarzadzania {
+            margin-top: 0; 
+            border-top: none; 
+            padding-top: 0; 
+            justify-content: flex-end; 
+            flex-grow: 1; 
+        }
+        hr.separator-akcji {
+            margin: 0 0 20px 0; 
+            border: none;
+            border-top: 1px solid #eee;
+        }
+
+        /* --- Style Modali --- */
+        .modal-tlo { position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; }
+        .modal-zawartosc { background-color: white; padding: 24px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); width: 90%; max-width: 500px; }
+        .modal-zawartosc #modal-staty-zestawu { font-size: 1rem; color: #555; margin-bottom: 10px; line-height: 1.5; }
+        .modal-zawartosc button { margin-top: 10px; }
+
+        #modal-import-tekstu .modal-zawartosc { max-width: 800px; text-align: left; }
+        .opcje-importu { display: flex; justify-content: space-between; gap: 20px; background-color: #f8f9fa; padding: 16px; border-radius: 8px; margin-top: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .opcje-kolumna { flex: 1; min-width: 250px; }
+        .opcje-kolumna p { font-weight: 600; margin-top: 0; margin-bottom: 10px; }
+        .opcja-importu { display: flex; align-items: center; margin-bottom: 8px; }
+        .opcja-importu label { margin: 0; margin-left: 8px; }
+        .opcja-importu input[type="radio"] { transform: scale(1.1); }
+        .input-dostosuj { width: 80px; padding: 5px; font-size: 0.9rem; margin-left: 10px; }
+        .input-dostosuj:disabled { background-color: #e9ecef; }
+    </style>
+    </head>
+<body>
+
+    <div id="ekran-lista-zestawow" class="ekran aktywny">
+        <div class="kontener">
+            <div class="nawigacja-zakladek">
+                <button id="btn-zakladka-aktywne" class="zakladka aktywna">Aktywne Zestawy</button>
+                <button id="btn-zakladka-archiwum" class="zakladka">Archiwum</button>
+            </div>
+            <h2 id="naglowek-listy-zestawow">Twoje Zestawy Fiszek</h2>
+
+            <div class="kontener-akcji-naglowka">
+                <button id="btn-pokaz-edytor-nowy" class="przycisk-glowny">Stwórz nowy zestaw</button>
+                <div class="kontener-zarzadzania">
+                    <button id="btn-eksportuj" class="przycisk-maly">Eksportuj (plik .json)</button>
+                    <label for="input-importuj" class="przycisk-maly zielony">Importuj (plik .json)</label>
+                    <input type="file" id="input-importuj" accept=".json" style="display: none;">
+                    <button id="btn-pokaz-import-tekstu" class="przycisk-maly">Importuj (z tekstu)</button>
+                </div>
+            </div>
+            <hr class="separator-akcji">
+
+            <div class="form-group">
+                <input type="search" id="pasek-wyszukiwania" class="pasek-wyszukiwania" placeholder="Szukaj zestawów lub folderów...">
+            </div>
+            <div id="lista-zestawow"></div>
+            
+        </div>
+    </div>
+
+    <div id="ekran-edytor" class="ekran">
+        <div class="kontener">
+            <button id="btn-wroc-do-listy" class="przycisk-maly">&larr; Wróć do listy</button>
+            <h2 id="naglowek-edytora">Tworzenie nowego zestawu</h2>
+            <div class="form-group">
+                <label for="input-nazwa-zestawu">Nazwa zestawu:</label>
+                <input type="text" id="input-nazwa-zestawu" placeholder="np. Stolice Europy">
+            </div>
+            <div class="form-group">
+                <label for="input-nazwa-folderu">Folder (opcjonalnie):</label>
+                <input type="text" id="input-nazwa-folderu" list="lista-folderow" placeholder="np. Geografia">
+                <datalist id="lista-folderow"></datalist>
+            </div>
+            <hr>
+            <div class="edytor-kontener-podwojny">
+                <div class="edytor-kolumna" id="edytor-kolumna-formularz">
+                    <div class="form-header">
+                        <h3 id="naglowek-formularza-fiszki">Dodaj nową fiszkę</h3>
+                        <div class="form-header-przyciski">
+                            <button id="btn-dodaj-fiszke-do-zestawu" class="przycisk-maly zielony">Dodaj</button>
+                            <button id="btn-anuluj-edycje-fiszki" class="przycisk-maly" style="display: none;">Anuluj</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="pytanie-header">
+                            <label for="input-pytanie">Pytanie:</label>
+                            <div class="form-group-checkbox">
+                                <input type="checkbox" id="input-gwiazdka">
+                                <label for="input-gwiazdka" title="Oznacz gwiazdką">⭐</label>
+                            </div>
+                        </div>
+                        <textarea id="input-pytanie" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="select-typ-pytania">Typ pytania:</label>
+                        <select id="select-typ-pytania">
+                            <option value="fiszka">Zwykła fiszka (Pytanie / Odpowiedź)</option>
+                            <option value="wybor">Wielokrotny wybór (Wiele odpowiedzi)</option>
+                        </select>
+                    </div>
+                    <div id="pola-fiszka" class="pola-typu">
+                        <div class="form-group">
+                            <label for="input-odpowiedz-fiszka">Odpowiedź:</label>
+                            <textarea id="input-odpowiedz-fiszka" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div id="pola-wybor" class="pola-typu" style="display: none;">
+                        <label>Opcje odpowiedzi (zaznacz poprawne):</label>
+                        <div id="kontener-opcji-edytora"></div>
+                        <button id="btn-dodaj-opcje" class="przycisk-maly">+ Dodaj opcję</button>
+                    </div>
+                </div>
+                <div class="edytor-kolumna" id="edytor-kolumna-lista">
+                    <h3>Fiszki w tym zestawie:</h3>
+                    <div id="lista-fiszek-w-edytorze"></div>
+                </div>
+            </div>
+            <hr>
+            <button id="btn-zapisz-caly-zestaw" class="przycisk-glowny zielony">Zapisz cały zestaw</button>
+            <button id="btn-usun-caly-zestaw" class="przycisk-glowny czerwony">Usuń zestaw</button>
+        </div>
+    </div>
+
+    <div id="ekran-quizu" class="ekran">
+        <div class="kontener">
+            <button id="btn-wroc-do-listy-z-quizu" class="przycisk-maly">&larr; Zakończ i wróć do listy</button>
+            <button id="btn-gwiazdka-quiz" class="przycisk-gwiazdka">⭐</button>
+            <h2 id="nazwa-zestawu-quiz">Nazwa Zestawu</h2>
+            
+            <div id="postep-quizu">
+                Pytanie 1 / 10 
+                <span id="licznik-pominietych" style="display: none;"></span> 
+            </div>
+            
+            <div id="karta-quizu">
+                <div id="pytanie-quizu">Pytanie...</div>
+                <div id="odpowiedz-fiszka-quiz" style="display: none;">Odpowiedź...</div>
+                <div id="opcje-wybor-quiz" style="display: none;"></div>
+            </div>
+            
+            <div id="nawigacja-quizu">
+                <button id="btn-tasuj-quiz" class="przycisk-maly przycisk-tasuj" title="Przetasuj pozostałe karty">Tasuj 🔄</button>
+                <button id="btn-pomin-quiz" class="przycisk-maly przycisk-pomin" title="Pokaż tę kartę na końcu">Pomiń ↷</button>
+                
+                <button id="btn-akcja-quizu" class="przycisk-glowny">Pokaż odpowiedź</button>
+                
+                <div id="kontener-oceny" style="display: none;">
+                    <button id="btn-ocena-powtorz" class="przycisk-glowny czerwony">Powtórz</button>
+                    <button id="btn-ocena-umiem" class="przycisk-glowny zielony">Umiem</button>
+                </div>
+            </div>
+            
+            <div id="ekran-konca-quizu" style="display: none;">
+                <h2>Gratulacje!</h2>
+                <p id="tekst-konca-quizu"></p>
+                <div class="kontener-przyciskow-konca">
+                    <button id="btn-restart-trudne" class="przycisk-glowny czerwony">Powtórz tylko "Do powtórki"</button>
+                    <button id="btn-restart-gwiazdki" class="przycisk-glowny zolty">Powtórz tylko z gwiazdką ⭐</button>
+                    <button id="btn-restart-wszystko" class="przycisk-glowny">Powtórz cały zestaw</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-start-quizu" class="modal-tlo" style="display: none;">
+        <div class="modal-zawartosc">
+            <h2 id="modal-nazwa-zestawu">Rozpocznij naukę</h2>
+            <p id="modal-staty-zestawu">Statystyki zestawu...</p>
+            <button id="btn-start-kontynuuj" class="przycisk-glowny">Kontynuuj naukę</button>
+            <button id="btn-start-gwiazdki" class="przycisk-glowny">Tylko oznaczone gwiazdką</button>
+            <button id="btn-start-wszystko" class="przycisk-glowny">Ucz się wszystkiego od nowa</button>
+            <button id="btn-anuluj-start-quizu" class="przycisk-maly">Anuluj</button>
+        </div>
+    </div>
+
+    <div id="modal-import-tekstu" class="modal-tlo" style="display: none;">
+        <div class="modal-zawartosc">
+            <h2>Importuj z tekstu</h2>
+            <div class="form-group">
+                <label for="input-nazwa-importu">Nazwa nowego zestawu:</label>
+                <input type="text" id="input-nazwa-importu" placeholder="np. Słówka z Angielskiego">
+            </div>
+            <div class="form-group">
+                <label for="textarea-import-tekstu">Zaimportuj swoje dane...</label>
+                <textarea id="textarea-import-tekstu" rows="10" placeholder="Pojęcie 1 [Separator] Definicja 1..."></textarea>
+            </div>
+            <div class="opcje-importu">
+                <div class="opcje-kolumna">
+                    <p>Pomiędzy pojęciem a definicją</p>
+                    <div class="opcja-importu"><input type="radio" id="sep-pojecie-tab" name="separatorPojecia" value="tab" checked><label for="sep-pojecie-tab">Tab</label></div>
+                    <div class="opcja-importu"><input type="radio" id="sep-pojecie-przecinek" name="separatorPojecia" value="przecinek"><label for="sep-pojecie-przecinek">Przecinek</label></div>
+                    <div class="opcja-importu"><input type="radio" id="sep-pojecie-dostosuj" name="separatorPojecia" value="dostosuj"><label for="sep-pojecie-dostosuj">Dostosuj</label><input type="text" id="input-pojecie-dostosuj" class="input-dostosuj" disabled></div>
+                </div>
+                <div class="opcje-kolumna">
+                    <p>Pomiędzy fiszkami</p>
+                    <div class="opcja-importu"><input type="radio" id="sep-fiszka-wiersz" name="separatorFiszek" value="wiersz" checked><label for="sep-fiszka-wiersz">Nowy wiersz</label></div>
+                    <div class="opcja-importu"><input type="radio" id="sep-fiszka-srednik" name="separatorFiszek" value="srednik"><label for="sep-fiszka-srednik">Średnik</label></div>
+                    <div class="opcja-importu"><input type="radio" id="sep-fiszka-dostosuj" name="separatorFiszek" value="dostosuj"><label for="sep-fiszka-dostosuj">Dostosuj</label><input type="text" id="input-fiszka-dostosuj" class="input-dostosuj" disabled></div>
+                </div>
+            </div>
+            <button id="btn-zatwierdz-import-tekstu" class="przycisk-glowny zielony">Importuj</button>
+            <button id="btn-anuluj-import-tekstu" class="przycisk-maly">Anuluj</button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- SEKCJA 1: ZMIENNE GLOBALNE I SELEKTORY DOM ---
+            
+            const LOCAL_STORAGE_KEY = 'AplikacjaFiszek';
+            let wszystkieZestawy = {};
+            let edytowanyZestaw = {
+                oryginalnaNazwa: null,
+                nazwa: '',
+                folder: null, 
+                fiszki: []
+            };
+            let edytowanyIndexFiszki = null;
+            let aktualnyQuiz = {
+                nazwa: '',
+                karty: [],
+                pomineteKarty: [],
+                czyWTokuPomijane: false,
+                indexKarty: 0,
+                tryb: 'kontynuuj'
+            };
+            let czyWidokArchiwum = false;
+            let aktualnyFiltrNazwy = '';
+
+            const ekrany = {
+                lista: document.getElementById('ekran-lista-zestawow'),
+                edytor: document.getElementById('ekran-edytor'),
+                quiz: document.getElementById('ekran-quizu')
+            };
+
+            // Ekran Listy
+            const listaZestawowEl = document.getElementById('lista-zestawow');
+            const btnPokazEdytorNowy = document.getElementById('btn-pokaz-edytor-nowy');
+            const btnEksportuj = document.getElementById('btn-eksportuj');
+            const inputImportuj = document.getElementById('input-importuj');
+            const btnPokazImportTekstu = document.getElementById('btn-pokaz-import-tekstu');
+            const naglowekListyZestawow = document.getElementById('naglowek-listy-zestawow');
+            const btnZakladkaAktywne = document.getElementById('btn-zakladka-aktywne');
+            const btnZakladkaArchiwum = document.getElementById('btn-zakladka-archiwum');
+            const pasekWyszukiwania = document.getElementById('pasek-wyszukiwania');
+
+            // Ekran Edytora
+            const btnWrocDoListy = document.getElementById('btn-wroc-do-listy');
+            const naglowekEdytora = document.getElementById('naglowek-edytora');
+            const inputNazwaZestawu = document.getElementById('input-nazwa-zestawu');
+            const inputNazwaFolderu = document.getElementById('input-nazwa-folderu');
+            const listaFolderowDatalist = document.getElementById('lista-folderow');
+            const naglowekFormularzaFiszki = document.getElementById('naglowek-formularza-fiszki'); 
+            const inputPytanie = document.getElementById('input-pytanie');
+            const selectTypPytania = document.getElementById('select-typ-pytania');
+            const polaFiszka = document.getElementById('pola-fiszka');
+            const inputOdpowiedzFiszka = document.getElementById('input-odpowiedz-fiszka');
+            const polaWybor = document.getElementById('pola-wybor');
+            const kontenerOpcjiEdytora = document.getElementById('kontener-opcji-edytora');
+            const btnDodajOpcje = document.getElementById('btn-dodaj-opcje');
+            const inputGwiazdka = document.getElementById('input-gwiazdka'); 
+            const btnDodajFiszke = document.getElementById('btn-dodaj-fiszke-do-zestawu');
+            const btnAnulujEdycjeFiszki = document.getElementById('btn-anuluj-edycje-fiszki'); 
+            const listaFiszekWEdytorzeEl = document.getElementById('lista-fiszek-w-edytorze');
+            const btnZapiszCalyZestaw = document.getElementById('btn-zapisz-caly-zestaw');
+            const btnUsunCalyZestaw = document.getElementById('btn-usun-caly-zestaw');
+
+            // Ekran Quizu
+            const btnWrocDoListyZQuizu = document.getElementById('btn-wroc-do-listy-z-quizu');
+            const btnGwiazdkaQuiz = document.getElementById('btn-gwiazdka-quiz'); 
+            const nazwaZestawuQuizEl = document.getElementById('nazwa-zestawu-quiz');
+            const postepQuizuEl = document.getElementById('postep-quizu');
+            const licznikPominietychEl = document.getElementById('licznik-pominietych'); 
+            const pytanieQuizuEl = document.getElementById('pytanie-quizu');
+            const odpowiedzFiszkaQuizEl = document.getElementById('odpowiedz-fiszka-quiz');
+            const opcjeWyborQuizEl = document.getElementById('opcje-wybor-quiz');
+            const btnAkcjaQuizu = document.getElementById('btn-akcja-quizu');
+            const btnPominQuiz = document.getElementById('btn-pomin-quiz');
+            const btnTasujQuiz = document.getElementById('btn-tasuj-quiz');
+            const kontenerOceny = document.getElementById('kontener-oceny');
+            const btnOcenaUmiem = document.getElementById('btn-ocena-umiem');
+            const btnOcenaPowtorz = document.getElementById('btn-ocena-powtorz');
+            const ekranKoncaQuizuEl = document.getElementById('ekran-konca-quizu');
+            const tekstKoncaQuizuEl = document.getElementById('tekst-konca-quizu');
+            const btnRestartWszystko = document.getElementById('btn-restart-wszystko');
+            const btnRestartTrudne = document.getElementById('btn-restart-trudne');
+            const btnRestartGwiazdki = document.getElementById('btn-restart-gwiazdki'); 
+
+            // Modal startu quizu
+            const modalStartQuizu = document.getElementById('modal-start-quizu');
+            const modalNazwaZestawu = document.getElementById('modal-nazwa-zestawu');
+            const modalStatyZestawu = document.getElementById('modal-staty-zestawu');
+            const btnStartKontynuuj = document.getElementById('btn-start-kontynuuj');
+            const btnStartGwiazdki = document.getElementById('btn-start-gwiazdki');
+            const btnStartWszystko = document.getElementById('btn-start-wszystko');
+            const btnAnulujStartQuizu = document.getElementById('btn-anuluj-start-quizu');
+
+            // Modal importu tekstu
+            const modalImportTekstu = document.getElementById('modal-import-tekstu');
+            const inputNazwaImportu = document.getElementById('input-nazwa-importu');
+            const textareaImportTekstu = document.getElementById('textarea-import-tekstu');
+            const btnZatwierdzImportTekstu = document.getElementById('btn-zatwierdz-import-tekstu');
+            const btnAnulujImportTekstu = document.getElementById('btn-anuluj-import-tekstu');
+            const inputPojecieDostosuj = document.getElementById('input-pojecie-dostosuj');
+            const inputFiszkaDostosuj = document.getElementById('input-fiszka-dostosuj');
+            const separatoryPojeciaRadios = document.querySelectorAll('input[name="separatorPojecia"]');
+            const separatoryFiszekRadios = document.querySelectorAll('input[name="separatorFiszek"]');
+
+            // --- SEKCJA 2: ZARZĄDZANIE DANYMI (ZMIANY) ---
+            function zapiszDoLocalStorage() { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(wszystkieZestawy)); }
+            function aktualizujFiszkeWDb(nazwaZestawu, idFiszki, wlasciwosc, wartosc) { try { const fiszka = wszystkieZestawy[nazwaZestawu].fiszki.find(f => f.id === idFiszki); if (fiszka) { fiszka[wlasciwosc] = wartosc; zapiszDoLocalStorage(); } } catch (e) { console.error("Nie udało się zaktualizować fiszki:", e); } }
+            
+            // --- ZMIANA --- Funkcja migracji danych z obsługą nowego formatu opcji
+            function migrujDane(zestawy) { 
+                let czyBylaZmiana = false; 
+                const nazwy = Object.keys(zestawy); 
+                nazwy.forEach(nazwa => { 
+                    let fiszkiArray; 
+                    if (Array.isArray(zestawy[nazwa])) { 
+                        fiszkiArray = zestawy[nazwa]; 
+                        zestawy[nazwa] = { fiszki: fiszkiArray, archiwum: false, folder: null }; 
+                        czyBylaZmiana = true; 
+                    } else { 
+                        fiszkiArray = zestawy[nazwa].fiszki; 
+                        if (typeof zestawy[nazwa].archiwum === 'undefined') { 
+                            zestawy[nazwa].archiwum = false; 
+                            czyBylaZmiana = true; 
+                        } 
+                        if (typeof zestawy[nazwa].folder === 'undefined') { 
+                            zestawy[nazwa].folder = null; 
+                            czyBylaZmiana = true; 
+                        } 
+                    } 
+                    fiszkiArray.forEach((fiszka, index) => { 
+                        if (!fiszka.id) { fiszka.id = Date.now().toString() + index; czyBylaZmiana = true; } 
+                        if (!fiszka.status) { fiszka.status = 'nowe'; czyBylaZmiana = true; } 
+                        if (typeof fiszka.gwiazdka === 'undefined') { fiszka.gwiazdka = false; czyBylaZmiana = true; } 
+
+                        // --- NOWA LOGIKA MIGRACJI DLA OPCJI ---
+                        if (fiszka.typ === 'wybor' && fiszka.opcje && fiszka.opcje.length > 0 && typeof fiszka.opcje[0] === 'string') {
+                            // To jest stary format (array stringów), konwertuj na nowy (array obiektów)
+                            fiszka.opcje = fiszka.opcje.map(opcjaTekst => ({
+                                tekst: opcjaTekst,
+                                uwaga: null
+                            }));
+                            czyBylaZmiana = true;
+                        }
+                        // --- KONIEC NOWEJ LOGIKI ---
+                    }); 
+                }); 
+                return { zestawy, czyBylaZmiana }; 
+            }
+            
+            function ladujZLocalStorage() { const dane = localStorage.getItem(LOCAL_STORAGE_KEY); wszystkieZestawy = dane ? JSON.parse(dane) : {}; const { zestawy: zmigrowane, czyBylaZmiana } = migrujDane(wszystkieZestawy); wszystkieZestawy = zmigrowane; if (czyBylaZmiana) { zapiszDoLocalStorage(); } }
+
+            // --- SEKCJA 3: NAWIGACJA ---
+            function pokazEkran(nazwaEkranu) { Object.values(ekrany).forEach(ekran => ekran.classList.remove('aktywny')); if (ekrany[nazwaEkranu]) ekrany[nazwaEkranu].classList.add('aktywny'); }
+
+            // --- SEKCJA 4: EKRAN LISTY ZESTAWÓW (ZMIANY) ---
+            function aktualizujDatalistFolderow() {
+                const foldery = new Set(
+                    Object.values(wszystkieZestawy)
+                        .map(zestaw => zestaw.folder)
+                        .filter(f => f) 
+                );
+                listaFolderowDatalist.innerHTML = '';
+                foldery.forEach(folder => {
+                    const option = document.createElement('option');
+                    option.value = folder;
+                    listaFolderowDatalist.appendChild(option);
+                });
+            }
+            
+            function renderujListeZestawow(pokazArchiwum = false, filtrNazwy = '') {
+                listaZestawowEl.innerHTML = '';
+                const filtr = filtrNazwy.toLowerCase().trim();
+                
+                const przefiltrowaneZestawy = Object.keys(wszystkieZestawy)
+                    .filter(nazwa => wszystkieZestawy[nazwa].archiwum === pokazArchiwum)
+                    .filter(nazwa => {
+                        const zestaw = wszystkieZestawy[nazwa];
+                        const nazwaZestawuPasuje = nazwa.toLowerCase().includes(filtr);
+                        const nazwaFolderuPasuje = zestaw.folder && zestaw.folder.toLowerCase().includes(filtr);
+                        return nazwaZestawuPasuje || nazwaFolderuPasuje;
+                    })
+                    .map(nazwa => ({ ...wszystkieZestawy[nazwa], nazwa: nazwa })); 
+
+                btnZakladkaAktywne.classList.toggle('aktywna', !pokazArchiwum);
+                btnZakladkaArchiwum.classList.toggle('aktywna', pokazArchiwum);
+                naglowekListyZestawow.innerText = pokazArchiwum ? 'Zarchiwizowane Zestawy' : 'Aktywne Zestawy';
+                czyWidokArchiwum = pokazArchiwum;
+
+                if (przefiltrowaneZestawy.length === 0) {
+                    if (filtr) {
+                        listaZestawowEl.innerHTML = `<p>Brak wyników pasujących do "${filtr}".</p>`;
+                    } else {
+                        listaZestawowEl.innerHTML = `<p>${pokazArchiwum ? 'Archiwum jest puste.' : 'Nie masz jeszcze żadnych zestawów. Stwórz nowy!'}</p>`;
+                    }
+                    return;
+                }
+
+                const grupyFolderow = przefiltrowaneZestawy.reduce((acc, zestaw) => {
+                    const folder = zestaw.folder || null; 
+                    if (!acc[folder]) {
+                        acc[folder] = [];
+                    }
+                    acc[folder].push(zestaw);
+                    return acc;
+                }, {});
+
+                const posortowaneKluczeFolderow = Object.keys(grupyFolderow).sort((a, b) => {
+                    if (a === 'null') return 1;
+                    if (b === 'null') return -1;
+                    return a.localeCompare(b, 'pl', { sensitivity: 'base' });
+                });
+
+                posortowaneKluczeFolderow.forEach(kluczFolderu => {
+                    const nazwaFolderu = kluczFolderu === 'null' ? 'Bez folderu' : kluczFolderu;
+                    const zestawyWFolderze = grupyFolderow[kluczFolderu];
+
+                    const divGrupy = document.createElement('div');
+                    divGrupy.className = 'folder-grupa';
+                    divGrupy.dataset.folder = kluczFolderu; 
+                    
+                    divGrupy.innerHTML = `
+                        <div class="folder-naglowek">
+                            <h3>${nazwaFolderu}</h3>
+                        </div>
+                        <div class="folder-zawartosc"></div>
+                    `;
+                    
+                    const kontenerZestawow = divGrupy.querySelector('.folder-zawartosc');
+                    
+                    zestawyWFolderze.forEach(zestawObj => {
+                        const zestaw = zestawObj.fiszki;
+                        const nazwa = zestawObj.nazwa; 
+                        
+                        const total = zestaw.length;
+                        const nowe = zestaw.filter(f => f.status === 'nowe').length;
+                        const powtorka = zestaw.filter(f => f.status === 'powtorka').length;
+                        const umiem = total - nowe - powtorka;
+                        
+                        const divZestawu = document.createElement('div');
+                        divZestawu.className = 'zestaw-item';
+                        
+                        const przyciski = pokazArchiwum
+                            ? `<button class="przycisk-maly btn-edytuj" data-nazwa="${nazwa}">Edytuj</button><button class="przycisk-maly btn-eksportuj-zestaw" data-nazwa="${nazwa}">Eksportuj</button><button class="przycisk-maly btn-przywroc" data-nazwa="${nazwa}">Przywróć</button>`
+                            : `<button class="przycisk-maly niebieski btn-archiwizuj" data-nazwa="${nazwa}">Archiwizuj</button><button class="przycisk-maly btn-edytuj" data-nazwa="${nazwa}">Edytuj</button><button class="przycisk-maly btn-eksportuj-zestaw" data-nazwa="${nazwa}">Eksportuj</button><button class="przycisk-maly zielony btn-otworz-modal-quizu" data-nazwa="${nazwa}">Ucz się</button>`;
+                        
+                        divZestawu.innerHTML = `
+                            <div>
+                                <h3>${nazwa}</h3>
+                                <p>${total} fiszek (Umiem: ${umiem}, Powtórka: ${powtorka}, Nowe: ${nowe})</p>
+                            </div>
+                            <div class="zestaw-przyciski">${przyciski}</div>`;
+                        
+                        kontenerZestawow.appendChild(divZestawu);
+                    });
+                    
+                    listaZestawowEl.appendChild(divGrupy);
+                });
+            }
+
+            listaZestawowEl.addEventListener('click', (e) => { 
+                const nazwa = e.target.dataset.nazwa; 
+                if (!nazwa) return; 
+                if (e.target.classList.contains('btn-edytuj')) { 
+                    otworzEdytor(nazwa); 
+                } else if (e.target.classList.contains('btn-otworz-modal-quizu')) { 
+                    otworzModalStartuQuizu(nazwa); 
+                } else if (e.target.classList.contains('btn-archiwizuj')) { 
+                    wszystkieZestawy[nazwa].archiwum = true; 
+                    zapiszDoLocalStorage(); 
+                    renderujListeZestawow(false, aktualnyFiltrNazwy); 
+                } else if (e.target.classList.contains('btn-przywroc')) { 
+                    wszystkieZestawy[nazwa].archiwum = false; 
+                    zapiszDoLocalStorage(); 
+                    renderujListeZestawow(true, aktualnyFiltrNazwy); 
+                } else if (e.target.classList.contains('btn-eksportuj-zestaw')) {
+                    eksportujPojedynczyZestaw(nazwa);
+                }
+            });
+
+            pasekWyszukiwania.addEventListener('input', (e) => { aktualnyFiltrNazwy = e.target.value; renderujListeZestawow(czyWidokArchiwum, aktualnyFiltrNazwy); });
+            btnZakladkaAktywne.addEventListener('click', () => { pasekWyszukiwania.value = ''; aktualnyFiltrNazwy = ''; renderujListeZestawow(false, ''); });
+            btnZakladkaArchiwum.addEventListener('click', () => { pasekWyszukiwania.value = ''; aktualnyFiltrNazwy = ''; renderujListeZestawow(true, ''); });
+            btnPokazEdytorNowy.addEventListener('click', () => otworzEdytor(null));
+            btnWrocDoListy.addEventListener('click', () => { if (edytowanyIndexFiszki !== null) { alert("Najpierw zakończ edycję fiszki (kliknij 'Zaktualizuj' lub 'Anuluj')."); return; } if (confirm("Czy na pewno chcesz wyjść bez zapisywania? Zmiany w tym zestawie zostaną utracone.")) { pokazEkran('lista'); renderujListeZestawow(czyWidokArchiwum, aktualnyFiltrNazwy); } });
+            
+            function otworzModalStartuQuizu(nazwa) { 
+                const zestaw = wszystkieZestawy[nazwa].fiszki; 
+                modalNazwaZestawu.innerText = nazwa; 
+                const total = zestaw.length; 
+                const doNauki = zestaw.filter(f => f.status === 'nowe' || f.status === 'powtorka').length; 
+                const gwiazdki = zestaw.filter(f => f.gwiazdka).length; 
+                modalStatyZestawu.innerHTML = `Do nauki (Nowe + Powtórka): <strong>${doNauki}</strong><br>Oznaczone gwiazdką: <strong>${gwiazdki}</strong><br>Wszystkich fiszek: <strong>${total}</strong>`; 
+                btnStartKontynuuj.dataset.nazwa = nazwa; 
+                btnStartGwiazdki.dataset.nazwa = nazwa; 
+                btnStartWszystko.dataset.nazwa = nazwa; 
+                btnStartKontynuuj.disabled = doNauki === 0; 
+                btnStartGwiazdki.disabled = gwiazdki === 0; 
+                btnStartWszystko.disabled = total === 0; 
+                modalStartQuizu.style.display = 'flex'; 
+            }
+            function zamknijModalStartuQuizu() { modalStartQuizu.style.display = 'none'; }
+            
+            btnStartKontynuuj.addEventListener('click', (e) => { uruchomQuiz(e.target.dataset.nazwa, 'kontynuuj', true); zamknijModalStartuQuizu(); });
+            btnStartGwiazdki.addEventListener('click', (e) => { uruchomQuiz(e.target.dataset.nazwa, 'gwiazdki', true); zamknijModalStartuQuizu(); });
+            btnStartWszystko.addEventListener('click', (e) => { uruchomQuiz(e.target.dataset.nazwa, 'wszystko', true); zamknijModalStartuQuizu(); });
+            
+            btnAnulujStartQuizu.addEventListener('click', zamknijModalStartuQuizu);
+            modalStartQuizu.addEventListener('click', (e) => { if (e.target === modalStartQuizu) zamknijModalStartuQuizu(); });
+
+            // --- SEKCJA 5: EKRAN EDYTORA ZESTAWU (ZMIANY) ---
+            function otworzEdytor(nazwaZestawu) {
+                aktualizujDatalistFolderow(); 
+
+                if (nazwaZestawu) {
+                    const zestawObj = wszystkieZestawy[nazwaZestawu];
+                    edytowanyZestaw.oryginalnaNazwa = nazwaZestawu;
+                    edytowanyZestaw.nazwa = nazwaZestawu;
+                    edytowanyZestaw.fiszki = JSON.parse(JSON.stringify(zestawObj.fiszki));
+                    edytowanyZestaw.folder = zestawObj.folder || null; 
+                    naglowekEdytora.innerText = `Edytujesz: ${nazwaZestawu}`;
+                    inputNazwaZestawu.value = nazwaZestawu;
+                    inputNazwaFolderu.value = zestawObj.folder || ''; 
+                    btnUsunCalyZestaw.style.display = 'block';
+                } else {
+                    edytowanyZestaw.oryginalnaNazwa = null;
+                    edytowanyZestaw.nazwa = '';
+                    edytowanyZestaw.fiszki = [];
+                    edytowanyZestaw.folder = null; 
+                    naglowekEdytora.innerText = 'Tworzenie nowego zestawu';
+                    inputNazwaZestawu.value = '';
+                    inputNazwaFolderu.value = ''; 
+                    btnUsunCalyZestaw.style.display = 'none';
+                }
+                renderujListeFiszekWEdytorze();
+                wyczyscFormularzFiszki();
+                pokazEkran('edytor');
+            }
+            selectTypPytania.addEventListener('change', () => { if (selectTypPytania.value === 'fiszka') { polaFiszka.style.display = 'block'; polaWybor.style.display = 'none'; } else { polaFiszka.style.display = 'none'; polaWybor.style.display = 'block'; if (kontenerOpcjiEdytora.childElementCount === 0) { dodajPustaOpcjeDoEdytora(); dodajPustaOpcjeDoEdytora(); } } });
+            
+            // --- ZMIANA --- dodajPustaOpcjeDoEdytora teraz obsługuje uwagi
+            function dodajPustaOpcjeDoEdytora(tekst = '', jestPoprawna = false, uwaga = '') { 
+                const divOpcji = document.createElement('div'); 
+                divOpcji.className = 'opcja-w-edytorze'; 
+                divOpcji.innerHTML = `
+                    <div class="opcja-w-edytorze-glowna">
+                        <input type="checkbox" class="cb-poprawna" ${jestPoprawna ? 'checked' : ''}>
+                        <input type="text" class="input-opcja" placeholder="Treść opcji" value="${tekst}">
+                        <button class="przycisk-maly czerwony btn-usun-opcje">&times;</button>
+                    </div>
+                    <input type="text" class="input-uwaga" placeholder="Uwaga (opcjonalnie)" value="${uwaga || ''}">
+                `; 
+                divOpcji.querySelector('.btn-usun-opcje').addEventListener('click', () => divOpcji.remove()); 
+                kontenerOpcjiEdytora.appendChild(divOpcji); 
+            }
+            // --- KONIEC ---
+
+            btnDodajOpcje.addEventListener('click', () => dodajPustaOpcjeDoEdytora());
+            
+            // --- ZMIANA --- btnDodajFiszke teraz zapisuje uwagi
+            btnDodajFiszke.addEventListener('click', () => { 
+                const pytanie = inputPytanie.value.trim(); 
+                const typ = selectTypPytania.value; 
+                const gwiazdka = inputGwiazdka.checked; 
+                if (!pytanie) { alert("Pytanie nie może być puste!"); return; } 
+                let nowaFiszka = { id: edytowanyIndexFiszki !== null ? edytowanyZestaw.fiszki[edytowanyIndexFiszki].id : Date.now().toString(), pytanie: pytanie, typ: typ, status: edytowanyIndexFiszki !== null ? edytowanyZestaw.fiszki[edytowanyIndexFiszki].status : 'nowe', gwiazdka: gwiazdka }; 
+                if (typ === 'fiszka') { 
+                    const odpowiedz = inputOdpowiedzFiszka.value.trim(); 
+                    if (!odpowiedz) { alert("Odpowiedź nie może być pusta!"); return; } 
+                    nowaFiszka.odpowiedz = odpowiedz; 
+                } else { 
+                    nowaFiszka.opcje = []; 
+                    nowaFiszka.odpowiedzi = []; 
+                    const opcjeElementy = kontenerOpcjiEdytora.querySelectorAll('.opcja-w-edytorze'); 
+                    opcjeElementy.forEach(opcjaEl => { 
+                        const tekstOpcji = opcjaEl.querySelector('.input-opcja').value.trim(); 
+                        const uwagaOpcji = opcjaEl.querySelector('.input-uwaga').value.trim() || null; // Zapisz uwage
+                        const jestPoprawna = opcjaEl.querySelector('.cb-poprawna').checked; 
+                        if (tekstOpcji) { 
+                            nowaFiszka.opcje.push({ tekst: tekstOpcji, uwaga: uwagaOpcji }); // Zapisz jako obiekt
+                            if (jestPoprawna) nowaFiszka.odpowiedzi.push(tekstOpcji); 
+                        } 
+                    }); 
+                    if (nowaFiszka.opcje.length < 2) { alert("Pytanie wielokrotnego wyboru musi mieć co najmniej 2 opcje."); return; } 
+                    if (nowaFiszka.odpowiedzi.length === 0) { alert("Pytanie wielokrotnego wyboru musi mieć co najmniej 1 poprawną odpowiedź."); return; } 
+                } 
+                if (edytowanyIndexFiszki !== null) { 
+                    edytowanyZestaw.fiszki[edytowanyIndexFiszki] = nowaFiszka; 
+                } else { 
+                    edytowanyZestaw.fiszki.push(nowaFiszka); 
+                } 
+                renderujListeFiszekWEdytorze(); 
+                wyczyscFormularzFiszki(); 
+            });
+            // --- KONIEC ---
+
+            function renderujListeFiszekWEdytorze() { listaFiszekWEdytorzeEl.innerHTML = ''; if (edytowanyZestaw.fiszki.length === 0) { listaFiszekWEdytorzeEl.innerHTML = '<p>Ten zestaw jest pusty. Dodaj fiszki powyżej.</p>'; } edytowanyZestaw.fiszki.forEach((fiszka, index) => { const divFiszki = document.createElement('div'); divFiszki.className = 'fiszka-w-edytorze'; divFiszki.dataset.status = fiszka.status; const gwiazdkaHtml = fiszka.gwiazdka ? '<span class="gwiazdka-ikona">⭐</span>' : ''; divFiszki.innerHTML = `<span>${gwiazdkaHtml} ${index + 1}. ${fiszka.pytanie} (${fiszka.typ})</span><div class="fiszka-przyciski"><button class="przycisk-maly btn-edytuj-fiszke" data-index="${index}">Edytuj</button><button class="przycisk-maly czerwony btn-usun-fiszke" data-index="${index}">&times;</button></div>`; divFiszki.querySelector('.btn-usun-fiszke').addEventListener('click', (e) => { const indexDoUsuniecia = parseInt(e.target.dataset.index, 10); if (edytowanyIndexFiszki === indexDoUsuniecia) { alert("Nie można usunąć fiszki podczas jej edycji. Najpierw anuluj edycję."); return; } usunFiszkeZEdytora(indexDoUsuniecia); }); divFiszki.querySelector('.btn-edytuj-fiszke').addEventListener('click', (e) => { if (edytowanyIndexFiszki !== null) { alert("Już edytujesz inną fiszkę. Zakończ lub anuluj poprzednią edycję."); return; } const indexDoEdycji = parseInt(e.target.dataset.index, 10); ladujFiszkeDoFormularza(indexDoEdycji); }); listaFiszekWEdytorzeEl.appendChild(divFiszki); }); }
+            
+            // --- ZMIANA --- ladujFiszkeDoFormularza teraz ładuje uwagi
+            function ladujFiszkeDoFormularza(index) { 
+                const fiszka = edytowanyZestaw.fiszki[index]; 
+                if (!fiszka) return; 
+                edytowanyIndexFiszki = index; 
+                inputPytanie.value = fiszka.pytanie; 
+                selectTypPytania.value = fiszka.typ; 
+                inputGwiazdka.checked = fiszka.gwiazdka; 
+                selectTypPytania.dispatchEvent(new Event('change')); 
+                kontenerOpcjiEdytora.innerHTML = ''; 
+                if (fiszka.typ === 'fiszka') { 
+                    inputOdpowiedzFiszka.value = fiszka.odpowiedz; 
+                } else if (fiszka.typ === 'wybor') { 
+                    fiszka.opcje.forEach(opcjaObj => { 
+                        const jestPoprawna = fiszka.odpowiedzi.includes(opcjaObj.tekst); 
+                        dodajPustaOpcjeDoEdytora(opcjaObj.tekst, jestPoprawna, opcjaObj.uwaga); // Przekaż tekst i uwagę
+                    }); 
+                } 
+                naglowekFormularzaFiszki.innerText = `Edytujesz fiszkę #${index + 1}`; 
+                btnDodajFiszke.innerText = 'Zaktualizuj'; 
+                btnAnulujEdycjeFiszki.style.display = 'inline-block'; 
+                naglowekFormularzaFiszki.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); 
+            }
+            // --- KONIEC ---
+
+            function usunFiszkeZEdytora(index) { edytowanyZestaw.fiszki.splice(index, 1); renderujListeFiszekWEdytorze(); }
+            function wyczyscFormularzFiszki() { inputPytanie.value = ''; inputOdpowiedzFiszka.value = ''; kontenerOpcjiEdytora.innerHTML = ''; selectTypPytania.value = 'fiszka'; inputGwiazdka.checked = false; polaFiszka.style.display = 'block'; polaWybor.style.display = 'none'; edytowanyIndexFiszki = null; naglowekFormularzaFiszki.innerText = 'Dodaj nową fiszkę'; btnDodajFiszke.innerText = 'Dodaj'; btnAnulujEdycjeFiszki.style.display = 'none'; }
+            btnAnulujEdycjeFiszki.addEventListener('click', wyczyscFormularzFiszki);
+            btnZapiszCalyZestaw.addEventListener('click', () => { if (edytowanyIndexFiszki !== null) { alert("Nie można zapisać zestawu podczas edycji fiszki. Najpierw zaktualizuj lub anuluj."); return; } const nowaNazwa = inputNazwaZestawu.value.trim(); const nowyFolder = inputNazwaFolderu.value.trim() || null; if (!nowaNazwa) { alert("Nazwa zestawu nie może być pusta!"); return; } if (nowaNazwa !== edytowanyZestaw.oryginalnaNazwa && wszystkieZestawy[nowaNazwa]) { alert("Zestaw o tej nazwie już istnieje!"); return; } const czyArchiwum = (edytowanyZestaw.oryginalnaNazwa && wszystkieZestawy[edytowanyZestaw.oryginalnaNazwa]) ? wszystkieZestawy[edytowanyZestaw.oryginalnaNazwa].archiwum : false; if (edytowanyZestaw.oryginalnaNazwa && edytowanyZestaw.oryginalnaNazwa !== nowaNazwa) { delete wszystkieZestawy[edytowanyZestaw.oryginalnaNazwa]; } wszystkieZestawy[nowaNazwa] = { fiszki: edytowanyZestaw.fiszki, archiwum: czyArchiwum, folder: nowyFolder }; zapiszDoLocalStorage(); alert("Zestaw zapisany pomyślnie!"); pokazEkran('lista'); renderujListeZestawow(czyArchiwum, aktualnyFiltrNazwy); });
+            btnUsunCalyZestaw.addEventListener('click', () => { if (!edytowanyZestaw.oryginalnaNazwa) return; if (confirm(`Czy na pewno chcesz trwale usunąć zestaw "${edytowanyZestaw.oryginalnaNazwa}"?`)) { delete wszystkieZestawy[edytowanyZestaw.oryginalnaNazwa]; zapiszDoLocalStorage(); pokazEkran('lista'); renderujListeZestawow(czyWidokArchiwum, aktualnyFiltrNazwy); } });
+
+            // --- SEKCJA 5B: IMPORT / EKSPORT (bez zmian) ---
+            function eksportujZestawy() { const dane = localStorage.getItem(LOCAL_STORAGE_KEY); if (!dane || Object.keys(JSON.parse(dane)).length === 0) { alert("Nie masz żadnych zestawów do wyeksportowania."); return; } const blob = new Blob([dane], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const data = new Date(); const dataStr = `${data.getFullYear()}-${(data.getMonth()+1).toString().padStart(2, '0')}-${data.getDate().toString().padStart(2, '0')}`; a.download = `fiszki-backup-${dataStr}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+            function eksportujPojedynczyZestaw(nazwaZestawu) {
+                if (!wszystkieZestawy[nazwaZestawu]) {
+                    alert("Nie znaleziono zestawu!");
+                    return;
+                }
+                const zestawDoEksportu = {
+                    [nazwaZestawu]: wszystkieZestawy[nazwaZestawu]
+                };
+                const dane = JSON.stringify(zestawDoEksportu, null, 2); 
+                const blob = new Blob([dane], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `fiszki-zestaw-${nazwaZestawu}.json`; 
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            function importujZestawy(event) { const plik = event.target.files[0]; if (!plik) return; const reader = new FileReader(); reader.onload = (e) => { let noweZestawy; try { noweZestawy = JSON.parse(e.target.result); } catch (err) { alert("Błąd! Plik jest uszkodzony lub ma nieprawidłowy format JSON."); return; } if (typeof noweZestawy !== 'object' || Array.isArray(noweZestawy) || noweZestawy === null) { alert("Błąd! Plik nie zawiera prawidłowej struktury zestawów."); return; } if (confirm("Czy chcesz połączyć importowane zestawy z obecnymi? Spowoduje to nadpisanie zestawów o tych samych nazwach.")) { const { zestawy: zmigrowaneNowe } = migrujDane(noweZestawy); wszystkieZestawy = { ...wszystkieZestawy, ...zmigrowaneNowe }; zapiszDoLocalStorage(); renderujListeZestawow(czyWidokArchiwum, aktualnyFiltrNazwy); alert(`Import zakończony! Dodano/zaktualizowano ${Object.keys(zmigrowaneNowe).length} zestawów.`); } }; reader.readAsText(plik); event.target.value = null; }
+
+            // --- SEKCJA 5C: Import z tekstu (bez zmian) ---
+            function pokazModalImportuTekstu() { inputNazwaImportu.value = ''; textareaImportTekstu.value = ''; document.getElementById('sep-pojecie-tab').checked = true; document.getElementById('sep-fiszka-wiersz').checked = true; inputPojecieDostosuj.disabled = true; inputFiszkaDostosuj.disabled = true; modalImportTekstu.style.display = 'flex'; }
+            function zamknijModalImportuTekstu() { modalImportTekstu.style.display = 'none'; }
+            separatoryPojeciaRadios.forEach(radio => radio.addEventListener('change', () => { inputPojecieDostosuj.disabled = document.querySelector('input[name="separatorPojecia"]:checked').value !== 'dostosuj'; }));
+            separatoryFiszekRadios.forEach(radio => radio.addEventListener('change', () => { inputFiszkaDostosuj.disabled = document.querySelector('input[name="separatorFiszek"]:checked').value !== 'dostosuj'; }));
+            function zatwierdzImportTekstu() { const nazwaZestawu = inputNazwaImportu.value.trim(); const tekst = textareaImportTekstu.value.trim(); if (!nazwaZestawu) { alert("Nazwa zestawu nie może być pusta."); return; } if (wszystkieZestawy[nazwaZestawu]) { alert("Zestaw o tej nazwie już istnieje. Zmień nazwę."); return; } if (!tekst) { alert("Pole z fiszkami nie może być puste."); return; } let separatorPojecia; const typSepPojecia = document.querySelector('input[name="separatorPojecia"]:checked').value; if (typSepPojecia === 'tab') separatorPojecia = '\t'; else if (typSepPojecia === 'przecinek') separatorPojecia = ','; else separatorPojecia = inputPojecieDostosuj.value; let separatorFiszek; const typSepFiszek = document.querySelector('input[name="separatorFiszek"]:checked').value; if (typSepFiszek === 'wiersz') separatorFiszek = '\n'; else if (typSepFiszek === 'srednik') separatorFiszek = ';'; else separatorFiszek = inputFiszkaDostosuj.value; if ((typSepPojecia === 'dostosuj' && !separatorPojecia) || (typSepFiszek === 'dostosuj' && !separatorFiszek)) { alert("Separator 'Dostosuj' nie może być pusty, jeśli jest zaznaczony."); return; } const noweFiszki = []; const linie = tekst.split(separatorFiszek); try { linie.forEach((linia, index) => { linia = linia.trim(); if (linia === '') return; const pola = linia.split(separatorPojecia); if (pola.length !== 2) { throw new Error(`Błąd w linii ${index + 1}: Linia musi zawierać dokładnie jeden separator pojęcia (znaleziono ${pola.length - 1}).`); } const pytanie = pola[0].trim(); const odpowiedz = pola[1].trim(); if (!pytanie || !odpowiedz) { throw new Error(`Błąd w linii ${index + 1}: Pytanie lub odpowiedź jest puste.`); } noweFiszki.push({ id: Date.now().toString() + index, pytanie: pytanie, odpowiedz: odpowiedz, typ: 'fiszka', status: 'nowe', gwiazdka: false }); }); wszystkieZestawy[nazwaZestawu] = { fiszki: noweFiszki, archiwum: false, folder: null }; zapiszDoLocalStorage(); renderujListeZestawow(false, ''); zamknijModalImportuTekstu(); alert(`Zestaw "${nazwaZestawu}" został pomyślnie zaimportowany (${noweFiszki.length} fiszek).`); } catch (err) { alert(`Błąd importu: ${err.message}`); } }
+            btnPokazImportTekstu.addEventListener('click', pokazModalImportuTekstu);
+            btnAnulujImportTekstu.addEventListener('click', zamknijModalImportuTekstu);
+            btnZatwierdzImportTekstu.addEventListener('click', zatwierdzImportTekstu);
+            modalImportTekstu.addEventListener('click', (e) => { if (e.target === modalImportTekstu) zamknijModalImportuTekstu(); });
+
+
+            // --- SEKCJA 6: EKRAN QUIZU (ZMIANY) ---
+
+            function zamieszajTablice(tablica) {
+                let zasieg = tablica.length;
+                while (zasieg != 0) {
+                    let losowyIndex = Math.floor(Math.random() * zasieg);
+                    zasieg--;
+                    [tablica[zasieg], tablica[losowyIndex]] = [tablica[losowyIndex], tablica[zasieg]];
+                }
+                return tablica;
+            }
+
+            function uruchomQuiz(nazwaZestawu, tryb = 'kontynuuj', czyTasowac = true) {
+                const zestawBazowy = wszystkieZestawy[nazwaZestawu].fiszki;
+                if (!zestawBazowy || zestawBazowy.length === 0) { alert("Ten zestaw jest pusty!"); return; }
+
+                aktualnyQuiz.nazwa = nazwaZestawu;
+                aktualnyQuiz.tryb = tryb;
+                aktualnyQuiz.pomineteKarty = [];
+                aktualnyQuiz.czyWTokuPomijane = false;
+                
+                let kartyDoQuizu;
+                if (tryb === 'kontynuuj') {
+                    kartyDoQuizu = zestawBazowy.filter(karta => karta.status === 'nowe' || karta.status === 'powtorka');
+                } else if (tryb === 'gwiazdki') {
+                    kartyDoQuizu = zestawBazowy.filter(karta => karta.gwiazdka);
+                } else { 
+                    kartyDoQuizu = [...zestawBazowy];
+                }
+
+                if (kartyDoQuizu.length === 0) {
+                    if(tryb === 'kontynuuj') alert("Gratulacje! Wszystko umiesz w tym zestawie...");
+                    else if(tryb === 'gwiazdki') alert("Nie masz żadnych kart oznaczonych gwiazdką...");
+                    else alert("Ten zestaw jest pusty.");
+                    pokazEkran('lista');
+                    renderujListeZestawow(czyWidokArchiwum, aktualnyFiltrNazwy); 
+                    return;
+                }
+
+                let kartyDoPracy = [...kartyDoQuizu];
+                aktualnyQuiz.karty = czyTasowac ? zamieszajTablice(kartyDoPracy) : kartyDoPracy;
+                
+                aktualnyQuiz.indexKarty = 0;
+                nazwaZestawuQuizEl.innerText = nazwaZestawu;
+                ekranKoncaQuizuEl.style.display = 'none';
+                licznikPominietychEl.style.display = 'none'; 
+                
+                ladujNastepnaKarteQuizu();
+                pokazEkran('quiz');
+            }
+
+            // --- ZMIANA --- ladujNastepnaKarteQuizu odczytuje teraz obiekty opcji
+            function ladujNastepnaKarteQuizu() {
+                btnAkcjaQuizu.style.display = 'block';
+                btnPominQuiz.style.display = 'block';
+                btnTasujQuiz.style.display = 'block'; 
+                kontenerOceny.style.display = 'none';
+                odpowiedzFiszkaQuizEl.style.display = 'none';
+                opcjeWyborQuizEl.style.display = 'none';
+                opcjeWyborQuizEl.innerHTML = '';
+                
+                if (aktualnyQuiz.indexKarty >= aktualnyQuiz.karty.length) {
+                    if (aktualnyQuiz.pomineteKarty.length > 0 && !aktualnyQuiz.czyWTokuPomijane) {
+                        aktualnyQuiz.karty = aktualnyQuiz.pomineteKarty;
+                        aktualnyQuiz.pomineteKarty = [];
+                        aktualnyQuiz.indexKarty = 0;
+                        aktualnyQuiz.czyWTokuPomijane = true;
+                    } else {
+                        pokazEkranKoncaQuizu();
+                        return;
+                    }
+                }
+                
+                const karta = aktualnyQuiz.karty[aktualnyQuiz.indexKarty];
+                pytanieQuizuEl.innerText = karta.pytanie;
+                
+                const prefix = aktualnyQuiz.czyWTokuPomijane ? "Pominięte " : "Pytanie ";
+                const postepText = `${prefix} ${aktualnyQuiz.indexKarty + 1} / ${aktualnyQuiz.karty.length}`;
+                
+                if (aktualnyQuiz.pomineteKarty.length > 0 && !aktualnyQuiz.czyWTokuPomijane) {
+                    licznikPominietychEl.innerText = `(Pominięte: ${aktualnyQuiz.pomineteKarty.length})`;
+                    licznikPominietychEl.style.display = 'inline';
+                } else {
+                    licznikPominietychEl.style.display = 'none';
+                }
+                postepQuizuEl.firstChild.textContent = postepText + ' '; 
+
+                btnPominQuiz.style.display = aktualnyQuiz.czyWTokuPomijane ? 'none' : 'block';
+                
+                btnGwiazdkaQuiz.classList.toggle('aktywna', karta.gwiazdka);
+                
+                if (karta.typ === 'fiszka') {
+                    odpowiedzFiszkaQuizEl.innerText = karta.odpowiedz;
+                    btnAkcjaQuizu.innerText = 'Pokaż odpowiedź';
+                    btnAkcjaQuizu.onclick = pokazOdpowiedzQuizu;
+                } else {
+                    const opcjeDoPokazania = karta.opcje ? [...karta.opcje] : [];
+                    const zamieszaneOpcje = zamieszajTablice(opcjeDoPokazania);
+                    zamieszaneOpcje.forEach((opcjaObj) => { // Teraz to jest obiekt
+                        const divOpcji = document.createElement('div');
+                        divOpcji.className = 'opcja-quizu';
+                        // Użyj opcjaObj.tekst
+                        divOpcji.innerHTML = `<label><input type="checkbox" name="quiz-opcja" value="${opcjaObj.tekst}"> ${opcjaObj.tekst}</label>`;
+                        opcjeWyborQuizEl.appendChild(divOpcji);
+                    });
+                    opcjeWyborQuizEl.style.display = 'block';
+                    btnAkcjaQuizu.innerText = 'Sprawdź odpowiedzi';
+                    btnAkcjaQuizu.onclick = pokazOdpowiedzQuizu;
+                }
+            }
+            // --- KONIEC ---
+
+            // --- ZMIANA --- pokazOdpowiedzQuizu teraz wyświetla uwagi
+            function pokazOdpowiedzQuizu() {
+                btnPominQuiz.style.display = 'none';
+                btnTasujQuiz.style.display = 'none'; 
+                const karta = aktualnyQuiz.karty[aktualnyQuiz.indexKarty];
+                
+                if (karta.typ === 'fiszka') {
+                    odpowiedzFiszkaQuizEl.style.display = 'block';
+                } else {
+                    const wybraneOpcje = Array.from(opcjeWyborQuizEl.querySelectorAll('input:checked')).map(cb => cb.value);
+                    const poprawneOpcje = karta.odpowiedzi || [];
+                    
+                    opcjeWyborQuizEl.querySelectorAll('input').forEach(cb => cb.disabled = true);
+                    
+                    opcjeWyborQuizEl.querySelectorAll('label').forEach(label => {
+                        const input = label.querySelector('input');
+                        const wartosc = input.value;
+                        
+                        // Znajdź oryginalny obiekt opcji
+                        const opcjaObj = karta.opcje.find(o => o.tekst === wartosc);
+
+                        const jestPoprawna = poprawneOpcje.includes(wartosc);
+                        const zostalaWybrana = wybraneOpcje.includes(wartosc);
+                        
+                        if (jestPoprawna) label.classList.add('poprawna');
+                        else if (zostalaWybrana && !jestPoprawna) label.classList.add('bledna');
+
+                        // --- NOWA LOGIKA DODAWANIA UWAGI ---
+                        if (opcjaObj && opcjaObj.uwaga) {
+                            const uwagaEl = document.createElement('span');
+                            uwagaEl.className = 'uwaga-quizu';
+                            uwagaEl.innerText = opcjaObj.uwaga;
+                            label.appendChild(uwagaEl);
+                        }
+                        // --- KONIEC NOWEJ LOGIKI ---
+                    });
+                }
+                btnAkcjaQuizu.style.display = 'none';
+                kontenerOceny.style.display = 'flex';
+            }
+            // --- KONIEC ---
+
+            btnGwiazdkaQuiz.addEventListener('click', () => { const karta = aktualnyQuiz.karty[aktualnyQuiz.indexKarty]; const nowyStatusGwiazdki = !karta.gwiazdka; karta.gwiazdka = nowyStatusGwiazdki; btnGwiazdkaQuiz.classList.toggle('aktywna', nowyStatusGwiazdki); aktualizujFiszkeWDb(aktualnyQuiz.nazwa, karta.id, 'gwiazdka', nowyStatusGwiazdki); });
+            
+            btnPominQuiz.addEventListener('click', () => {
+                if (aktualnyQuiz.czyWTokuPomijane) return; 
+                const kartaDoPominiecia = aktualnyQuiz.karty[aktualnyQuiz.indexKarty];
+                aktualnyQuiz.pomineteKarty.push(kartaDoPominiecia);
+                licznikPominietychEl.innerText = `(Pominięte: ${aktualnyQuiz.pomineteKarty.length})`;
+                licznikPominietychEl.style.display = 'inline';
+                aktualnyQuiz.indexKarty++;
+                ladujNastepnaKarteQuizu();
+            });
+
+            btnTasujQuiz.addEventListener('click', () => {
+                if (aktualnyQuiz.karty.length > 1) { 
+                    zamieszajTablice(aktualnyQuiz.karty); 
+                    aktualnyQuiz.indexKarty = 0; 
+                    ladujNastepnaKarteQuizu();
+                }
+            });
+
+            btnOcenaUmiem.addEventListener('click', () => { btnTasujQuiz.style.display = 'none'; ocenKarte('umiem'); });
+            btnOcenaPowtorz.addEventListener('click', () => { btnTasujQuiz.style.display = 'none'; ocenKarte('powtorka'); });
+            function ocenKarte(status) {
+                const karta = aktualnyQuiz.karty[aktualnyQuiz.indexKarty];
+                if (aktualnyQuiz.tryb !== 'gwiazdki') {
+                    aktualizujFiszkeWDb(aktualnyQuiz.nazwa, karta.id, 'status', status);
+                }
+                aktualnyQuiz.indexKarty++;
+                ladujNastepnaKarteQuizu();
+            }
+            
+            function pokazEkranKoncaQuizu() {
+                btnAkcjaQuizu.style.display = 'none';
+                btnPominQuiz.style.display = 'none';
+                btnTasujQuiz.style.display = 'none'; 
+                kontenerOceny.style.display = 'none';
+                ekranKoncaQuizuEl.style.display = 'block';
+                tekstKoncaQuizuEl.innerText = `Ukończyłeś zestaw w trybie: "${aktualnyQuiz.tryb}".`;
+                
+                const zestaw = wszystkieZestawy[aktualnyQuiz.nazwa].fiszki;
+                const czySaTrudne = zestaw.some(karta => karta.status === 'powtorka');
+                btnRestartTrudne.style.display = czySaTrudne ? 'block' : 'none';
+                const czySaGwiazdki = zestaw.some(karta => karta.gwiazdka);
+                btnRestartGwiazdki.style.display = czySaGwiazdki ? 'block' : 'none';
+                
+                const czyTasowac = true; 
+
+                btnRestartWszystko.onclick = () => uruchomQuiz(aktualnyQuiz.nazwa, 'wszystko', czyTasowac);
+                btnRestartTrudne.onclick = () => uruchomQuiz(aktualnyQuiz.nazwa, 'kontynuuj', czyTasowac);
+                btnRestartGwiazdki.onclick = () => uruchomQuiz(aktualnyQuiz.nazwa, 'gwiazdki', czyTasowac);
+            }
+            
+            btnWrocDoListyZQuizu.addEventListener('click', () => {
+                if (confirm("Czy na pewno chcesz zakończyć ten quiz?")) {
+                    pokazEkran('lista');
+                    renderujListeZestawow(czyWidokArchiwum, aktualnyFiltrNazwy);
+                }
+            });
+
+            // --- SEKCJA 7: INICJALIZACJA APLIKACJI (bez zmian) ---
+            btnEksportuj.addEventListener('click', eksportujZestawy);
+            inputImportuj.addEventListener('change', importujZestawy);
+            function startAplikacji() { ladujZLocalStorage(); renderujListeZestawow(false, ''); pokazEkran('lista'); selectTypPytania.dispatchEvent(new Event('change')); }
+            startAplikacji();
+        });
+    </script>
+    </body>
+</html>
