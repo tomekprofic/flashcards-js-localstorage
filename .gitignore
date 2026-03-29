@@ -1,0 +1,17 @@
+# Systemowe pliki tymczasowe
+.DS_Store
+Thumbs.db
+
+# Pliki konfiguracji edytorów
+.vscode/
+.idea/
+*.swp
+*.sublime-project
+*.sublime-workspace
+
+# Jeśli w przyszłości dodasz paczki npm:
+node_modules/
+npm-debug.log*
+
+# Opcjonalnie: backupy danych (jeśli trzymasz lokalne pliki .json do testów)
+*.json.bak
