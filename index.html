@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centrum Fiszek</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="ekran-lista-zestawow" class="ekran aktywny">
+        <div class="kontener">
+            <h2>Twoje Zestawy Fiszek</h2>
+            <div id="lista-zestawow">
+                </div>
+            <button id="btn-pokaz-edytor-nowy" class="przycisk-glowny">Stwórz nowy zestaw</button>
+            
+            <div class="kontener-zarzadzania">
+                <button id="btn-eksportuj" class="przycisk-maly">Eksportuj wszystkie zestawy</button>
+                <label for="input-importuj" class="przycisk-maly zielony">
+                    Importuj zestawy
+                </label>
+                <input type="file" id="input-importuj" accept=".json" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <div id="ekran-edytor" class="ekran">
+        <div class="kontener">
+            <button id="btn-wroc-do-listy" class="przycisk-maly">&larr; Wróć do listy</button>
+            <h2 id="naglowek-edytora">Tworzenie nowego zestawu</h2>
+            
+            <div class="form-group">
+                <label for="input-nazwa-zestawu">Nazwa zestawu:</label>
+                <input type="text" id="input-nazwa-zestawu" placeholder="np. Stolice Europy">
+            </div>
+            
+            <hr>
+
+            <div class="edytor-kontener-podwojny">
+
+                <div class="edytor-kolumna" id="edytor-kolumna-formularz">
+                    
+                    <div class="form-header">
+                        <h3 id="naglowek-formularza-fiszki">Dodaj nową fiszkę</h3>
+                        <div class="form-header-przyciski">
+                            <button id="btn-dodaj-fiszke-do-zestawu" class="przycisk-maly zielony">Dodaj</button>
+                            <button id="btn-anuluj-edycje-fiszki" class="przycisk-maly" style="display: none;">Anuluj</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="pytanie-header">
+                            <label for="input-pytanie">Pytanie:</label>
+                            <div class="form-group-checkbox">
+                                <input type="checkbox" id="input-gwiazdka">
+                                <label for="input-gwiazdka" title="Oznacz gwiazdką">⭐</label>
+                            </div>
+                        </div>
+                        <textarea id="input-pytanie" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="select-typ-pytania">Typ pytania:</label>
+                        <select id="select-typ-pytania">
+                            <option value="fiszka">Zwykła fiszka (Pytanie / Odpowiedź)</option>
+                            <option value="wybor">Wielokrotny wybór (Wiele odpowiedzi)</option>
+                        </select>
+                    </div>
+        
+                    <div id="pola-fiszka" class="pola-typu">
+                        <div class="form-group">
+                            <label for="input-odpowiedz-fiszka">Odpowiedź:</label>
+                            <textarea id="input-odpowiedz-fiszka" rows="2"></textarea>
+                        </div>
+                    </div>
+        
+                    <div id="pola-wybor" class="pola-typu" style="display: none;">
+                        <label>Opcje odpowiedzi (zaznacz poprawne):</label>
+                        <div id="kontener-opcji-edytora"></div>
+                        <button id="btn-dodaj-opcje" class="przycisk-maly">+ Dodaj opcję</button>
+                    </div>
+                    
+                    </div>
+
+                <div class="edytor-kolumna" id="edytor-kolumna-lista">
+                    <h3>Fiszki w tym zestawie:</h3>
+                    <div id="lista-fiszek-w-edytorze">
+                        </div>
+                </div>
+
+            </div>
+            
+            <hr>
+            
+            <button id="btn-zapisz-caly-zestaw" class="przycisk-glowny zielony">Zapisz cały zestaw</button>
+            <button id="btn-usun-caly-zestaw" class="przycisk-glowny czerwony">Usuń zestaw</button>
+        </div>
+    </div>
+
+    <div id="ekran-quizu" class="ekran">
+        <div class="kontener">
+            <button id="btn-wroc-do-listy-z-quizu" class="przycisk-maly">&larr; Zakończ i wróć do listy</button>
+            <button id="btn-gwiazdka-quiz" class="przycisk-gwiazdka">⭐</button>
+            <h2 id="nazwa-zestawu-quiz">Nazwa Zestawu</h2>
+            <div id="postep-quizu">Pytanie 1 / 10</div>
+            
+            <div id="karta-quizu">
+                <div id="pytanie-quizu">Pytanie...</div>
+                <div id="odpowiedz-fiszka-quiz" style="display: none;">Odpowiedź...</div>
+                <div id="opcje-wybor-quiz" style="display: none;"></div>
+            </div>
+            
+            <div id="nawigacja-quizu">
+                <button id="btn-akcja-quizu" class="przycisk-glowny">Pokaż odpowiedź</button>
+                <div id="kontener-oceny" style="display: none;">
+                    <p>Jak Ci poszło?</p>
+                    <button id="btn-ocena-powtorz" class="przycisk-glowny czerwony">Powtórz</button>
+                    <button id="btn-ocena-umiem" class="przycisk-glowny zielony">Umiem</button>
+                </div>
+            </div>
+
+            <div id="ekran-konca-quizu" style="display: none;">
+                <h2>Gratulacje!</h2>
+                <p id="tekst-konca-quizu"></p>
+                <button id="btn-restart-wszystko">Powtórz cały zestaw</button>
+                <button id="btn-restart-trudne">Powtórz tylko "Do powtórki"</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-start-quizu" class="modal-tlo" style="display: none;">
+        <div class="modal-zawartosc">
+            <h2 id="modal-nazwa-zestawu">Rozpocznij naukę</h2>
+            <p id="modal-staty-zestawu">Statystyki zestawu...</p>
+            <button id="btn-start-kontynuuj" class="przycisk-glowny">Kontynuuj naukę</button>
+            <button id="btn-start-gwiazdki" class="przycisk-glowny">Tylko oznaczone gwiazdką</button>
+            <button id="btn-start-wszystko" class="przycisk-glowny">Ucz się wszystkiego od nowa</button>
+            <button id="btn-anuluj-start-quizu" class="przycisk-maly">Anuluj</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
