@@ -2,6 +2,9 @@
 
 Prosta i funkcjonalna aplikacja webowa do tworzenia własnych zestawów fiszek i efektywnej nauki. Projekt został stworzony w czystym JavaScript (Vanilla JS), z naciskiem na logikę zarządzania danymi w przeglądarce.
 
+### Podgląd
+https://htmlpreview.github.io/?https://github.com/tomekprofic/flashcards-js-localstorage/blob/main/index.html
+
 ## Główne Funkcjonalności
 
 *   **Zarządzanie Zestawami:** Tworzenie, edycja i usuwanie własnych talii fiszek.
